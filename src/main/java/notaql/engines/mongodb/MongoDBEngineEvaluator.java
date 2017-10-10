@@ -84,7 +84,7 @@ public class MongoDBEngineEvaluator implements EngineEvaluator {
 
         this.databaseName = params.get("database_name").getValue().toString();
         this.collectionName = params.get("collection_name").getValue().toString();
-        this.noQuery = (Boolean)params.getOrDefault("no_query", new BooleanValue(false)).getValue();
+        this.noQuery = (Boolean)params.getOrDefault(Boolean.parseBoolean("no_query"), new BooleanValue(false)).getValue();
     }
 
 

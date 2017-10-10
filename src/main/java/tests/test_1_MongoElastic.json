@@ -1,0 +1,16 @@
+[
+  {
+    "name": "mongo->elastic",
+    "IN-ENGINE": {
+      "engine": "mongodb",
+      "database_name": "exploratory",
+      "collection_name": "collection1"
+    },
+    "OUT-ENGINE": {
+      "engine": "elasticsearch",
+      "index_name": "exploratory",
+      "type_name": "collection1"
+    },
+    "transformation": "OUT._id <- IN._id, OUT.body <- IN.body" 
+  }
+  ]

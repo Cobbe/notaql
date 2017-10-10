@@ -50,7 +50,7 @@ public class NotaQL {
     public static void main(String... args) throws IOException {
         BasicConfigurator.configure();
 
-        if (args.length < 1)
+        /*if (args.length < 1)
             throw new IllegalArgumentException("The input must be provided as follows: [--config=PATH/TO/settings.config] notaql_query");
 
         int start = 0;
@@ -60,9 +60,12 @@ public class NotaQL {
             final String path = args[0].substring(args[0].indexOf("=") + 1);
 
             loadConfig(path);
-
+            
             start = 1;
-        }
+        }*/
+        
+        loadConfig("settings.config");
+        int start = 0;
 
         final StringBuilder builder = new StringBuilder();
         for(int i = start; i < args.length; i++) {
@@ -210,7 +213,7 @@ public class NotaQL {
 
             jsc = new JavaSparkContext(sc);
 
-            final String jarPath = prop.getProperty("dependency_jar");
+           /* final String jarPath = prop.getProperty("dependency_jar");
 
             if(jarPath == null)
                 return jsc;
@@ -218,7 +221,7 @@ public class NotaQL {
             final File jar = new File(jarPath);
 
             jsc.addJar(jar.getAbsolutePath());
-
+*/
             return jsc;
         }
     }

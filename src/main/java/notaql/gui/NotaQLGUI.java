@@ -45,16 +45,18 @@ public class NotaQLGUI extends Application {
 
 
 
-        final String config = getParameters().getNamed().get("config");
+        //final String config = getParameters().getNamed().get("config");
+        
+        final String config = "settings.config";
 
-        if(config == null) {
-            final Action action = Dialogs.create()
-                    .title("Config not found")
-                    .masthead("Config file could not be loaded.")
-                    .message("Please provide a '--config=' as argument.")
-                    .showWarning();
-            System.exit(0);
-        }
+//        if(config == null) {
+//            final Action action = Dialogs.create()
+//                    .title("Config not found")
+//                    .masthead("Config file could not be loaded.")
+//                    .message("Please provide a '--config=' as argument.")
+//                    .showWarning();
+//            System.exit(0);
+//        }
 
         NotaQL.loadConfig(config);
     }

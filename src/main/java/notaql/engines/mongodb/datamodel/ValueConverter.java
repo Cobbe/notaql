@@ -87,19 +87,22 @@ public class ValueConverter {
     }
 
     public static Object convertFromNotaQL(Value o) {
+    	System.out.println(o);
         // Atom values
         if(o instanceof NullValue)
             return null;
-        if(o instanceof StringValue)
+        if(o instanceof StringValue){
             return ((StringValue) o).getValue();
+        }
         if(o instanceof DateValue)
             return ((DateValue) o).getValue();
         if(o instanceof NumberValue)
             return ((NumberValue) o).getValue();
         if(o instanceof BooleanValue)
             return ((BooleanValue) o).getValue();
-        if(o instanceof ObjectIdValue)
+        if(o instanceof ObjectIdValue){
             return ((ObjectIdValue) o).getValue();
+        }
         if(o instanceof SplitAtomValue<?>)
             return ((SplitAtomValue<?>)o).getValue();
 

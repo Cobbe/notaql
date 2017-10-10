@@ -16,6 +16,8 @@
 
 package notaql.engines;
 
+import notaql.engines.elasticsearch.ElasticsearchEngine;
+import notaql.engines.mongodb.MongoDBEngine;
 import notaql.model.EvaluationException;
 
 import java.util.*;
@@ -28,11 +30,16 @@ public class EngineService {
     private static EngineService service = null;
 
     private EngineService() {
-        final ServiceLoader<Engine> engineLoader = ServiceLoader.load(Engine.class);
-
-        for (Engine engine : engineLoader) {
-            engines.put(engine.getEngineName(), engine);
-        }
+//        final ServiceLoader<Engine> engineLoader = ServiceLoader.load(Engine.class);
+//
+//        for (Engine engine : engineLoader) {
+//            engines.put(engine.getEngineName(), engine);
+//        }
+    	ElasticsearchEngine esEngine = new ElasticsearchEngine();
+    	MongoDBEngine mongoEngine = new MongoDBEngine();
+    	engines.put(esEngine.getEngineName(), esEngine);
+    	engines.put(mongoEngine.getEngineName(), mongoEngine);
+    	
     }
 
     public static EngineService getInstance() {

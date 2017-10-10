@@ -21,6 +21,8 @@ import org.apache.commons.cli.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -32,197 +34,211 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
- * TODO: The mongodb collections must be compacted before running performance tests!
+ * TODO: The mongodb collections must be compacted before running performance
+ * tests!
  */
 public class PerformanceTest {
-    private static final String BASE_PATH = "/performanceTest/tests";
-    private static final int RUNS = 5;
+	private static final String BASE_PATH = "/performanceTest/tests/";
+	//private static final String BASE_PATH = "/tests/";
+	private static int RUNS = 1;
 
-    private static String inEngine = null;
-    private static String outEngine = null;
-    private static String testCase = null;
+	private static String inEngine = null;
+	private static String outEngine = null;
+	private static String testCase = null;
 
-    public static void main(String... args) throws IOException, URISyntaxException, ParseException {
-        final Options options = new Options();
-        options.addOption("c", "config", true, "The notaql config file.");
-        options.addOption("i", "inengine", true, "Execute for certain input engines");
-        options.addOption("o", "outengine", true, "Execute for certain output engines");
-        options.addOption("t", "test", true, "Execute certain test case only");
+	public static void main(String... args) throws IOException, URISyntaxException, ParseException {
+		final Options options = new Options();
+		options.addOption("c", "config", true, "The notaql config file.");
+		options.addOption("i", "inengine", true, "Execute for certain input engines");
+		options.addOption("o", "outengine", true, "Execute for certain output engines");
+		options.addOption("t", "test", true, "Execute certain test case only");
+		options.addOption("r", "runs", true, "Repeat for a number of runs.");
 
-        final CommandLineParser parser = new PosixParser();
-        final CommandLine cmd = parser.parse(options, args);
+		final CommandLineParser parser = new PosixParser();
+		final CommandLine cmd = parser.parse(options, args);
 
-        if (cmd.hasOption("config")) {
+		if (cmd.hasOption("config")) {
 
-            final String path = cmd.getOptionValue("config");
+			final String path = cmd.getOptionValue("config");
 
-            NotaQL.loadConfig(path);
-        }
+			NotaQL.loadConfig(path);
+		}
+		if (cmd.hasOption("runs")) {
 
-        inEngine = cmd.getOptionValue("inengine");
-        outEngine = cmd.getOptionValue("outengine");
-        testCase = cmd.getOptionValue("test");
+			RUNS = Integer.parseInt(cmd.getOptionValue("runs"));
+		}
 
-        runTests();
-    }
+		inEngine = cmd.getOptionValue("inengine");
+		outEngine = cmd.getOptionValue("outengine");
+		testCase = cmd.getOptionValue("test");
 
-    public static void runTests() throws URISyntaxException, IOException {
-        URI basePath = NotaQL.class.getResource(BASE_PATH).toURI();
+		runTests();
+	}
 
-        Map<String, String> env = new HashMap<>();
-        env.put("create", "true");
-        FileSystem zipfs = FileSystems.newFileSystem(basePath, env);
+	public static void runTests() throws URISyntaxException, IOException {
+		String path = "/home/john/test_1_MongoElastic.json";
+		//String path = PerformanceTest.class.getResource(BASE_PATH).toString()+"test_1_MongoElastic.json";
+		//path = path.substring(6);
+		//System.out.println(path);
+//		URI basePath = new URI(path);
+//		URI basePath = new URI("/test/");
+//
+//		Map<String, String> env = new HashMap<>();
+//		env.put("create", "true");
+//		FileSystem zipfs = FileSystems.newFileSystem(basePath, env);
+//
+//		final List<Path> tests = Files.list(Paths.get(basePath)).filter(p -> p.toString().endsWith(".json"))
+//				.sorted((a, b) -> a.toString().compareTo(b.toString())).collect(Collectors.toList());
 
-        final List<Path> tests = Files
-                .list(Paths.get(basePath))
-                .filter(p -> p.toString().endsWith(".json"))
-                .sorted((a, b) -> a.toString().compareTo(b.toString()))
-                .collect(Collectors.toList());
+		List<String> csv = new LinkedList<>();
 
-        List<String> csv = new LinkedList<>();
+		//for (Path test : tests) {
+		Path test = Paths.get(path);
+//			if (testCase != null && !test.getFileName().toString().equals(testCase))
+//				continue;
 
-        for (Path test : tests) {
-            if(testCase != null && !test.getFileName().toString().equals(testCase))
-                continue;
+			final List<JSONObject> transformations = readArray(test);
 
-            final List<JSONObject> transformations = readArray(test);
+			csv.add(test.getFileName().toString());
 
-            csv.add(test.getFileName().toString());
+			int i = 1;
 
-            int i = 1;
+			for (JSONObject transformation : transformations) {
+				final String name = transformation.getString("name");
+				final String notaqlTransformation = composeTransformation(transformation);
 
-            for (JSONObject transformation : transformations) {
-                final String name = transformation.getString("name");
-                final String notaqlTransformation = composeTransformation(transformation);
+				if (!(inEngine == null && outEngine == null
+						|| inEngine != null
+								&& transformation.getJSONObject("IN-ENGINE").getString("engine").equals(inEngine)
+						|| outEngine != null
+								&& transformation.getJSONObject("OUT-ENGINE").getString("engine").equals(outEngine)))
+					continue;
 
-                if(!(inEngine == null && outEngine == null || inEngine != null && transformation.getJSONObject("IN-ENGINE").getString("engine").equals(inEngine) || outEngine != null && transformation.getJSONObject("OUT-ENGINE").getString("engine").equals(outEngine)))
-                    continue;
+				System.out.println("Evaluation test (" + i++ + "/" + transformations.size() + "): " + test.getFileName()
+						+ ": " + name);
 
-                System.out.println("Evaluation test ("+ i++ +"/"+ transformations.size() +"): " + test.getFileName() + ": " + name);
+				List<Duration> durations = new LinkedList<>();
 
-                List<Duration> durations = new LinkedList<>();
+				for (int j = 0; j < RUNS; j++) {
+					clean(transformation);
 
-                for(int j = 0; j < RUNS; j++) {
-                    clean(transformation);
+					final Instant startTime = Instant.now();
 
-                    final Instant startTime = Instant.now();
+					NotaQL.evaluate(notaqlTransformation);
 
-                    NotaQL.evaluate(notaqlTransformation);
+					final Instant endTime = Instant.now();
 
-                    final Instant endTime = Instant.now();
+					final Duration duration = Duration.between(startTime, endTime);
 
-                    final Duration duration = Duration.between(startTime, endTime);
+					durations.add(duration);
 
-                    durations.add(duration);
+					System.out.println("Testrun(" + j + ") " + name + " took: " + duration);
+				}
 
-                    System.out.println("Testrun(" + j + ") " + name + " took: " + duration);
-                }
+				System.out.println("!!=================================================================!!");
 
-                System.out.println("!!=================================================================!!");
+				System.out.println("Test " + name + " took: "
+						+ durations.stream().map(Duration::toString).collect(Collectors.joining(", ")));
 
+				System.out.println("Test " + name + " took millis: "
+						+ durations.stream().map(d -> Long.toString(d.toMillis())).collect(Collectors.joining(", ")));
 
-                System.out.println(
-                        "Test " + name + " took: " +
-                                durations.stream().map(Duration::toString).collect(Collectors.joining(", "))
-                );
+				System.out.println("Test " + name + " took on average (millis): "
+						+ durations.stream().mapToLong(Duration::toMillis).average());
 
-                System.out.println(
-                        "Test " + name + " took millis: " +
-                                durations.stream().map(d -> Long.toString(d.toMillis())).collect(Collectors.joining(", "))
-                );
+				System.out.println("Test " + name + " took on average (ignoring first - millis): "
+						+ durations.stream().skip(1).mapToLong(Duration::toMillis).average());
 
-                System.out.println(
-                        "Test " + name + " took on average (millis): " +
-                            durations.stream().mapToLong(Duration::toMillis).average()
-                );
+				System.out.println("!!=================================================================!!");
 
-                System.out.println(
-                        "Test " + name + " took on average (ignoring first - millis): " +
-                        durations.stream().skip(1).mapToLong(Duration::toMillis).average()
-                );
+				csv.add(name);
+				csv.add(durations.stream().map(d -> Long.toString(d.toMillis())).collect(Collectors.joining(",")));
+				
+					FileWriter fileWriter = new FileWriter("/home/john/notaql-time.txt", true);
+					BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+					StringBuilder stringBuilder = new StringBuilder();
+					stringBuilder.append(name + "\t" + durations.stream().map(d -> Long.toString(d.toMillis())).collect(Collectors.joining(", ")) + "\t" + durations.stream().mapToLong(Duration::toMillis).average() + "\t" + durations.stream().skip(1).mapToLong(Duration::toMillis).average() + "\n" );
+					bufferedWriter.write(stringBuilder.toString());
+					bufferedWriter.close();
+			}
 
-                System.out.println("!!=================================================================!!");
+		//}
 
-                csv.add(name);
-                csv.add(durations.stream().map(d -> Long.toString(d.toMillis())).collect(Collectors.joining(",")));
-            }
+		System.out.println(csv.stream().collect(Collectors.joining("\n")));
+	}
 
-        }
+	private static void clean(JSONObject transformation) throws IOException {
+		final JSONObject outEngine = transformation.getJSONObject("OUT-ENGINE");
 
-        System.out.println(csv.stream().collect(Collectors.joining("\n")));
-    }
+		final String engineName = outEngine.getString("engine");
+		if (engineName.equals("csv")) {
+			deleteRecursive(Paths.get(outEngine.getString("csv_path")));
+		}
+		if (engineName.equals("json")) {
+			deleteRecursive(Paths.get(outEngine.getString("path")));
+		}
+	}
 
-    private static void clean(JSONObject transformation) throws IOException {
-        final JSONObject outEngine = transformation.getJSONObject("OUT-ENGINE");
+	private static void deleteRecursive(Path path) throws IOException {
+		if (!Files.exists(path))
+			return;
 
-        final String engineName = outEngine.getString("engine");
-        if(engineName.equals("csv")) {
-            deleteRecursive(Paths.get(outEngine.getString("csv_path")));
-        }
-        if(engineName.equals("json")) {
-            deleteRecursive(Paths.get(outEngine.getString("path")));
-        }
-    }
+		Files.walk(path).sorted((a, b) -> b.compareTo(a)). // reverse; files
+															// before dirs
+				forEach(p -> {
+					try {
+						Files.delete(p);
+					} catch (IOException e) {
+						/* ... */ }
+				});
+	}
 
-    private static void deleteRecursive(Path path) throws IOException {
-        if(!Files.exists(path))
-            return;
+	private static String composeTransformation(JSONObject transformation) {
+		final JSONObject inEngine = transformation.getJSONObject("IN-ENGINE");
+		final JSONObject outEngine = transformation.getJSONObject("OUT-ENGINE");
+		final String mapping = transformation.getString("transformation");
 
-        Files.walk(path)
-                .sorted((a, b) -> b.compareTo(a)). // reverse; files before dirs
-                forEach(p -> {
-            try { Files.delete(p); }
-            catch(IOException e) { /* ... */ }
-        });
-    }
+		return "IN-ENGINE: " + composeEngine(inEngine) + ",\n" + "OUT-ENGINE: " + composeEngine(outEngine) + ",\n"
+				+ mapping;
+	}
 
-    private static String composeTransformation(JSONObject transformation) {
-        final JSONObject inEngine = transformation.getJSONObject("IN-ENGINE");
-        final JSONObject outEngine = transformation.getJSONObject("OUT-ENGINE");
-        final String mapping = transformation.getString("transformation");
+	private static String composeEngine(JSONObject engine) {
+		final StringBuilder builder = new StringBuilder();
+		builder.append(engine.get("engine"));
+		builder.append("(");
 
-        return "IN-ENGINE: " + composeEngine(inEngine) + ",\n" + "OUT-ENGINE: " + composeEngine(outEngine) + ",\n" + mapping;
-    }
+		final String params = StreamSupport
+				.stream(Spliterators.spliteratorUnknownSize(engine.keys(), Spliterator.ORDERED), false)
+				.filter(k -> !k.equals("engine")).map(k -> k + " <- " + toArg(k, engine))
+				.collect(Collectors.joining(", "));
 
-    private static String composeEngine(JSONObject engine) {
-        final StringBuilder builder = new StringBuilder();
-        builder.append(engine.get("engine"));
-        builder.append("(");
+		builder.append(params);
+		builder.append(")");
 
-        final String params = StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(engine.keys(), Spliterator.ORDERED),
-                false
-        )
-                .filter(k -> !k.equals("engine"))
-                .map(k -> k + " <- " + toArg(k, engine))
-                .collect(Collectors.joining(", "));
+		return builder.toString();
+	}
 
-        builder.append(params);
-        builder.append(")");
+	private static String toArg(String key, JSONObject engine) {
+		final Object val = engine.get(key);
+		if (val instanceof Boolean || val instanceof Number)
+			return val.toString();
 
-        return builder.toString();
-    }
+		return "'" + val.toString() + "'";
+	}
 
-    private static String toArg(String key, JSONObject engine) {
-        final Object val = engine.get(key);
-        if(val instanceof Boolean || val instanceof Number)
-            return val.toString();
+	private static List<JSONObject> readArray(Path path) throws IOException {
+		final String input = Files.lines(path).collect(Collectors.joining());
+		final JSONArray jsonArray = new JSONArray(input);
 
-        return "'" + val.toString() + "'";
-    }
+		final List<JSONObject> elements = new LinkedList<>();
+		for (int i = 0; i < jsonArray.length(); i++) {
+			final Object element = jsonArray.get(i);
+			if (!(element instanceof JSONObject))
+				throw new IOException("Expecting an array of objects as input.");
+			elements.add((JSONObject) element);
+		}
 
-    private static List<JSONObject> readArray(Path path) throws IOException {
-        final String input = Files.lines(path).collect(Collectors.joining());
-        final JSONArray jsonArray = new JSONArray(input);
-
-        final List<JSONObject> elements = new LinkedList<>();
-        for(int i = 0; i < jsonArray.length(); i++) {
-            final Object element = jsonArray.get(i);
-            if(!(element instanceof JSONObject))
-                throw new IOException("Expecting an array of objects as input.");
-            elements.add((JSONObject)element);
-        }
-
-        return elements;
-    }
+		return elements;
+	}
 }
+
