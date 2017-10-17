@@ -13,6 +13,7 @@ import notaql.parser.antlr.NotaQL2DocumentOutParser;
 
 /**
  * Created by John Bengtson on 2017-04-20
+ * based on existing engines.
  */
 public class ElasticsearchOutputPathStepVisitor extends NotaQL2DocumentOutBaseVisitor<OutputPathStep> {
 	private final TransformationParser parser;

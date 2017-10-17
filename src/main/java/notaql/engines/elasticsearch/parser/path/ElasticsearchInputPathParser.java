@@ -16,6 +16,7 @@ import notaql.parser.path.InputPathParser;
 
 /**
  * Created by John Bengtson on 2017-04-20
+ * based on existing engines.
  */
 public class ElasticsearchInputPathParser implements InputPathParser {
 	private final TransformationParser transformationParser;

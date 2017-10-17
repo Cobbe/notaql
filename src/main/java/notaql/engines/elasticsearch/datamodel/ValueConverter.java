@@ -18,10 +18,10 @@ import notaql.model.EvaluationException;
 
 /**
  * Created by John Bengtson and Christoffer Nilsson on 2017-05-04
- * Currently, there are instances from both the 
+ * Currently, this is based on parts from both the 
  * JSON ValueConverter and the MongoDB ValueConverter.
- * This class should has not been entirely verified, we recommend it to be reviewed and carefully tested.
- * [Not complete]
+ *
+ * This class has not been entirely verified, we recommend it to be reviewed and carefully tested.
  */
 
 /**

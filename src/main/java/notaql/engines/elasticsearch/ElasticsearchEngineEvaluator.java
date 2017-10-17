@@ -45,7 +45,7 @@ import scala.Tuple2;
 
 /**
  * Created by John Bengtson & Christoffer Nilsson on 2017-04-20
- * [Not complete]
+ * based on the existing engines.
  */
 public class ElasticsearchEngineEvaluator implements EngineEvaluator {
 	private final TransformationParser parser;

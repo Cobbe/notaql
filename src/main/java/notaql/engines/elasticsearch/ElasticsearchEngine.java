@@ -15,7 +15,6 @@ import notaql.parser.TransformationParser;
  * Created by John Bengtson and Christoffer Nilsson on 2017-04-20
  * The extension is based on the JSONEngine and the MongoDBEngine.
  * The JSONEngine seems to be based on the MongoDBEngine.
- * [Complete, except for the question about no_query.]
  */
 @AutoService(Engine.class)
 public class ElasticsearchEngine implements Engine {

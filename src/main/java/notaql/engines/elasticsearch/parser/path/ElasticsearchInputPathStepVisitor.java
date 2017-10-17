@@ -18,6 +18,7 @@ import notaql.parser.antlr.NotaQL2DocumentInParser;
 
 /**
  * Created by John Bengtson on 2017-04-20
+ * based on existing engines.
  */
 public class ElasticsearchInputPathStepVisitor extends NotaQL2DocumentInBaseVisitor<InputPathStep> {
 	private final TransformationParser parser;
